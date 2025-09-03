@@ -1,0 +1,53 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.pytype/
+.pyre/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Packaging/build artifacts
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+
+# Editors/IDEs
+.vscode/
+.idea/
+
+# ── Project-specific ─────────────────────────────────────────
+
+# Big raw data — keep these out of git
+Datasets/*.npy
+Datasets/*.npz
+
+# Generated results (Excel, CSV/Parquet, figures)
+Results/
+figs/
+thumbs/
+
+# If you ever accidentally dump artifacts at root
+*.xlsx
+*.csv
+*.parquet
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
