@@ -118,7 +118,7 @@ def write_sample_sheet(writer, sheet_name, vx, vy, den=None, vel_scale=None):
     summary = pd.DataFrame([
         ["Porosity φ", phi], ["Void pixels", void], ["Solid pixels", solid],
         ["Mean v_x", float(np.mean(vx))], ["Mean v_y", float(np.mean(vy))],
-        ["Net flow angle (deg)", net_flow_direction_deg(vx, vy)],   # <-- fixed name here
+        ["Net flow angle (deg)", net_flow_direction_deg(vx, vy)],
         ["Mean |v|", float(np.mean(sp))], ["p95 |v|", float(np.percentile(sp,95))],
         ["Max |v|", float(np.max(sp))],
         ["Note", f"Matrices below are scaled by ×{vel_scale:g}"]
@@ -159,11 +159,26 @@ def embed_figures_in_sheets(xlsx_path, mapping):
 def main():
     ap = argparse.ArgumentParser(description="Report-style Input/Predicted figures + per-sample velocity sheets (1–10).")
     ap.add_argument("--data-dir", default="Datasets")
-    ap.add_argument("--out-xlsx", default="Results/flow_summary.xlsx")
+    ap.add_argument("--out-dir", default="Results/flow_report",
+                    help="Output folder that will contain the Excel and figs/")
+    # If provided and relative, it's placed under --out-dir. If omitted, defaults to <out-dir>/flow_summary.xlsx
+    ap.add_argument("--out-xlsx", default=None)
     args = ap.parse_args()
 
-    os.makedirs(os.path.dirname(args.out_xlsx), exist_ok=True)
-    figs_dir = os.path.join(os.path.dirname(args.out_xlsx), "figs"); os.makedirs(figs_dir, exist_ok=True)
+    # Resolve output locations (robust)
+    out_dir_final = os.path.normpath(args.out_dir) if args.out_dir else "Results/flow_report"
+    if args.out_xlsx:
+        if os.path.isabs(args.out_xlsx):
+            out_xlsx_path = os.path.normpath(args.out_xlsx)
+            out_dir_final = os.path.dirname(out_xlsx_path)
+        else:
+            out_xlsx_path = os.path.join(out_dir_final, args.out_xlsx)
+    else:
+        out_xlsx_path = os.path.join(out_dir_final, "flow_summary.xlsx")
+
+    os.makedirs(out_dir_final, exist_ok=True)
+    figs_dir = os.path.join(out_dir_final, "figs")
+    os.makedirs(figs_dir, exist_ok=True)
 
     # Load arrays
     den = None
@@ -209,19 +224,18 @@ def main():
     summary_df = pd.DataFrame(summary_rows, columns=["Item","Value"])
 
     # Write Excel + one sheet per sample, numbered S01..S10
-    with pd.ExcelWriter(args.out_xlsx, engine="openpyxl") as xl:
+    with pd.ExcelWriter(out_xlsx_path, engine="openpyxl") as xl:
         summary_df.to_excel(xl, index=False, sheet_name="Summary")
         per_df.to_excel(xl, index=False, sheet_name="PerImageStats")
-
         for i in picks:
             sheet = f"S{i+1:02d}"
             den_i = den[i] if den is not None else None
             write_sample_sheet(xl, sheet, vx[i], vy[i], den_i)
 
     # Embed the figures into their corresponding sample sheets
-    embed_figures_in_sheets(args.out_xlsx, figure_paths)
+    embed_figures_in_sheets(out_xlsx_path, figure_paths)
 
-    print(f"Excel: {args.out_xlsx}")
+    print(f"Excel: {out_xlsx_path}")
     print("Sheets: Summary, PerImageStats, and S01..S{:02d}".format(len(picks)))
     print("Figures saved under:", figs_dir)
 
